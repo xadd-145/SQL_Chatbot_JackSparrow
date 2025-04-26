@@ -35,7 +35,7 @@ Forget clunky BI tools. With Jarvis, your database talks back.
 1. **Clone the repository**
 
 ```
-(https://github.com/Sahil-Shimpi/sql_assistant.git)
+https://github.com/Sahil-Shimpi/sql_assistant.git
 ```
 
 2. **Create ****`.env`**** file**
@@ -68,10 +68,6 @@ Visit: [http://localhost:8501](http://localhost:8501)
 - Sends your user query and schema info to Claude 3 Opus.
 - Claude generates executable SQL inside triple backticks.
 - App safely extracts and runs SQL on your live database.
-- Formats the output as:
-  - **Single value** → bold number
-  - **List** → bullet points
-  - **Multiple columns** → nice DataFrame
 
 ---
 
@@ -118,12 +114,6 @@ If you have ideas to make Jarvis smarter or faster, feel free to fork and open a
 
 > "A database is only as powerful as the questions you can ask it."\
 > — Jarvis
-
----
-
-## 🌐 Demo Screenshots (optional)
-
-*(You can later add screenshots showing: starting page, asking questions, getting clean DataFrames.)*
 
 ---
 
