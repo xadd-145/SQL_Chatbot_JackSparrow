@@ -1,0 +1,7 @@
+langchain-openai
+langchain
+black
+duckduckgo-search
+streamlit
+mysql-connector-python
+streamlit
