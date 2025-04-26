@@ -1,7 +1,7 @@
-langchain-openai
-langchain
-black
-duckduckgo-search
 streamlit
-mysql-connector-python
-streamlit
+pandas
+python-dotenv
+langchain-anthropic
+langchain-community
+pymysql
+sqlalchemy
