@@ -28,8 +28,7 @@ Streamlit Frontend: Fully interactive, clean, and expandable.
 
 Clone the repository
 
-git clone https://github.com/yourusername/jarvis-sql-assistant.git
-cd jarvis-sql-assistant
+git clone this project.
 
 Create .env file
 
@@ -49,7 +48,7 @@ Visit: http://localhost:8501
 
 🤖 How Jarvis Works
 
-Loads database schema context.
+Loads the database schema context.
 
 Sends your user query and schema info to Claude 3 Opus.
 
@@ -143,8 +142,4 @@ If you have ideas to make Jarvis smarter or faster, feel free to fork and open a
 
 "A database is only as powerful as the questions you can ask it."— Jarvis
 
-🌐 Demo Screenshots (optional)
-
-(You can later add screenshots showing: starting page, asking questions, getting clean DataFrames.)
-
-Ready to meet your database's new best friend?Let's go. 🚀
+Ready to meet your database's new best friend? Let's go. 🚀
