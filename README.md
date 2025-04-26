@@ -34,7 +34,8 @@ Forget clunky BI tools. With Jarvis, your database talks back.
 
 1. **Clone the repository**
 
-```[bash](https://github.com/Sahil-Shimpi/sql_assistant.git)
+```
+(https://github.com/Sahil-Shimpi/sql_assistant.git)
 ```
 
 2. **Create ****`.env`**** file**
