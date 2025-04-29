@@ -2,7 +2,7 @@
 # Captain Jack Sparrow: Database Treasure Hunter
 # ------------------------------------------------------------
 # A Streamlit application to interact with a MySQL database 
-# through natural language queries, powered by Claude 3 (Opus).
+# through natural language queries, powered by Claude 3.5 (Sonnet).
 # Themed after the legendary pirate, Captain Jack Sparrow!
 # ============================================================
 
@@ -15,6 +15,7 @@ import datetime
 from dotenv import load_dotenv
 from langchain_anthropic import ChatAnthropic
 from langchain_community.utilities import SQLDatabase
+import ast
 
 # =============== STREAMLIT PAGE CONFIG ===============
 st.set_page_config(page_title="Captain Jack Sparrow: Database Treasure Hunter", page_icon="🏴‍☠️")
@@ -24,7 +25,7 @@ load_dotenv()
 
 # Initialize Claude model
 llm = ChatAnthropic(
-    model="claude-3-opus-20240229",
+    model="claude-3-5-sonnet-20240620",
     temperature=0,
     api_key=os.getenv("ANTHROPIC_API_KEY")
 )
@@ -74,6 +75,12 @@ def extract_python_code(text):
 
 # Format query results for treasure-worthy display
 def format_result(result):
+    
+    # Replace "Decimal('1000.00')" → "1000.00"
+    def clean_decimal_string(s):
+        return re.sub(r"Decimal\('([\d\.]+)'\)", r"\1", s)
+
+    # Clean values for better readability
     def clean_value(val):
         if isinstance(val, Decimal):
             return float(val)
@@ -81,9 +88,20 @@ def format_result(result):
             return val.strftime("%Y-%m-%d %H:%M")
         return val
 
-    if isinstance(result, list) and result:
+    # Fix the input first
+    if isinstance(result, str):
+        result = clean_decimal_string(result)
+        try:
+            parsed = ast.literal_eval(result)
+            if isinstance(parsed, (list, tuple, dict)):
+                result = parsed
+        except (ValueError, SyntaxError):
+            st.error("❌ Still failed to parse even after Decimal fix.")
+            pass
+
+    # Now normal formatting below...
+    if isinstance(result, list):
         if all(isinstance(row, tuple) for row in result):
-            # If each tuple has only 1 value, flatten it
             if all(len(row) == 1 for row in result):
                 return "\n".join(f"- {clean_value(row[0])}" for row in result)
             else:
@@ -92,23 +110,30 @@ def format_result(result):
                 for col in df.columns:
                     df[col] = df[col].apply(clean_value)
                 return df
-        if all(isinstance(row, (str, int, float, Decimal)) for row in result):
-            return "\n".join(f"- {clean_value(row)}" for row in result)
         else:
-            return str(result)
-    if isinstance(result, (Decimal, int, float)):
+            return "\n".join(f"- {clean_value(row)}" for row in result)
+
+    elif isinstance(result, tuple):
+        return "\n".join(f"- {clean_value(val)}" for val in result)
+
+    elif isinstance(result, dict):
+        return pd.DataFrame([result])
+
+    elif isinstance(result, (Decimal, int, float)):
         return f"**{float(result):,.2f}**"
-    if isinstance(result, datetime.datetime):
+
+    elif isinstance(result, datetime.datetime):
         return result.strftime("%Y-%m-%d %H:%M")
-    if isinstance(result, str):
+
+    elif isinstance(result, str):
         try:
             num = float(result)
             return f"**{num:,.2f}**"
-        except ValueError:
+        except (ValueError, TypeError):
             return result
-    if isinstance(result, dict):
-        return pd.DataFrame([result])
-    return str(result)
+
+    else:
+        return str(result)
 
 # Dynamically execute Claude's generated Python code safely
 def run_python_code(code_string):
@@ -181,4 +206,4 @@ if user_query:
         else:
             st.markdown(formatted, unsafe_allow_html=True)
     
-    st.session_state["chat_history"].append({"role": "AI", "content": str(response)})
+    st.session_state["chat_history"].append({"role": "AI", "content": formatted})
