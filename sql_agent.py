@@ -76,11 +76,9 @@ def extract_python_code(text):
 # Format query results for treasure-worthy display
 def format_result(result):
     
-    # Replace "Decimal('1000.00')" → "1000.00"
     def clean_decimal_string(s):
         return re.sub(r"Decimal\('([\d\.]+)'\)", r"\1", s)
 
-    # Clean values for better readability
     def clean_value(val):
         if isinstance(val, Decimal):
             return float(val)
@@ -88,7 +86,6 @@ def format_result(result):
             return val.strftime("%Y-%m-%d %H:%M")
         return val
 
-    # Fix the input first
     if isinstance(result, str):
         result = clean_decimal_string(result)
         try:
@@ -96,10 +93,9 @@ def format_result(result):
             if isinstance(parsed, (list, tuple, dict)):
                 result = parsed
         except (ValueError, SyntaxError):
-            st.error("❌ Still failed to parse even after Decimal fix.")
+            st.error("❌ Failed to parse even after Decimal fix.")
             pass
 
-    # Now normal formatting below...
     if isinstance(result, list):
         if all(isinstance(row, tuple) for row in result):
             if all(len(row) == 1 for row in result):
@@ -126,14 +122,16 @@ def format_result(result):
         return result.strftime("%Y-%m-%d %H:%M")
 
     elif isinstance(result, str):
-        try:
-            num = float(result)
-            return f"**{num:,.2f}**"
-        except (ValueError, TypeError):
-            return result
+        numeric_match = re.search(r"[-+]?\d*\.\d+|\d+", result)
+        if numeric_match:
+            try:
+                num = float(numeric_match.group())
+                return f"**{num:,.2f}**"
+            except Exception:
+                return result
+        return result
 
-    else:
-        return str(result)
+    return str(result)
 
 # Dynamically execute Claude's generated Python code safely
 def run_python_code(code_string):
