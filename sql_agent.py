@@ -67,34 +67,60 @@ if "schema_context" not in st.session_state:
 
 # =============== HELPER FUNCTIONS ===============
 
-# Extract executable Python code from Claude's response
 def extract_python_code(text):
     pattern = r"```(?:python)?\n(.*?)```"
     match = re.search(pattern, text, re.DOTALL)
     return match.group(1).strip() if match else text.strip()
 
-# Format query results for treasure-worthy display
 def format_result(result):
-    
+
     def clean_decimal_string(s):
         return re.sub(r"Decimal\('([\d\.]+)'\)", r"\1", s)
+
+    def try_parse(val):
+        try:
+            # If val is a string, strip Decimal() wrapper & eval
+            if isinstance(val, str):
+                val = clean_decimal_string(val)
+                val = ast.literal_eval(val)
+            # Unwrap nested single-element list/tuple
+            while isinstance(val, (list, tuple)) and len(val) == 1:
+                val = val[0]
+            return val
+        except Exception:
+            return val
+
+    def try_float(val):
+        try:
+            return float(str(val).strip().replace(",", ""))
+        except Exception:
+            return val
 
     def clean_value(val):
         if isinstance(val, Decimal):
             return float(val)
-        if isinstance(val, datetime.datetime):
+        elif isinstance(val, datetime.datetime):
             return val.strftime("%Y-%m-%d %H:%M")
+        elif isinstance(val, (str, int, float)):
+            return try_float(val)
         return val
 
+    # 1. Early exit for known error string
+    if isinstance(result, str) and "⚠️ Execution Error" in result:
+        return result
+
+    # 2. Parse and unwrap
+    result = try_parse(result)
+
+    # 3. Format atomic values
+    if isinstance(result, (int, float, Decimal)):
+        return f"**{float(result):,.2f}**"
+
     if isinstance(result, str):
-        result = clean_decimal_string(result)
-        try:
-            parsed = ast.literal_eval(result)
-            if isinstance(parsed, (list, tuple, dict)):
-                result = parsed
-        except (ValueError, SyntaxError):
-            st.error("❌ Failed to parse even after Decimal fix.")
-            pass
+        parsed = try_float(result)
+        if isinstance(parsed, float):
+            return f"**{parsed:,.2f}**"
+        return result
 
     if isinstance(result, list):
         if all(isinstance(row, tuple) for row in result):
@@ -102,41 +128,26 @@ def format_result(result):
                 return "\n".join(f"- {clean_value(row[0])}" for row in result)
             else:
                 df = pd.DataFrame(result)
-                df.columns = [f"Column {i+1}" for i in range(len(df.columns))]
+                df.columns = [f"Column {i+1}" for i in range(df.shape[1])]
                 for col in df.columns:
                     df[col] = df[col].apply(clean_value)
                 return df
         else:
             return "\n".join(f"- {clean_value(row)}" for row in result)
 
-    elif isinstance(result, tuple):
+    if isinstance(result, tuple):
         return "\n".join(f"- {clean_value(val)}" for val in result)
 
-    elif isinstance(result, dict):
+    if isinstance(result, dict):
         return pd.DataFrame([result])
 
-    elif isinstance(result, (Decimal, int, float)):
-        return f"**{float(result):,.2f}**"
-
-    elif isinstance(result, datetime.datetime):
+    if isinstance(result, datetime.datetime):
         return result.strftime("%Y-%m-%d %H:%M")
-
-    elif isinstance(result, str):
-        numeric_match = re.search(r"[-+]?\d*\.\d+|\d+", result)
-        if numeric_match:
-            try:
-                num = float(numeric_match.group())
-                return f"**{num:,.2f}**"
-            except Exception:
-                return result
-        return result
 
     return str(result)
 
-# Dynamically execute Claude's generated Python code safely
 def run_python_code(code_string):
     try:
-        # Minor patch to auto-close missing quotes manually if needed
         if code_string.count('"') % 2 != 0 or code_string.count("'") % 2 != 0:
             code_string += '"'
         local_vars = {"db": st.session_state["db"]}
@@ -148,7 +159,6 @@ def run_python_code(code_string):
     except Exception as e:
         return f"⚠️ Execution Error: {str(e)}"
 
-# Build the Claude prompt and navigate the user's request
 def handle_query(user_query):
     schema_text = st.session_state["schema_context"]
     prompt = f"""You are a Python coding assistant helping a pirate captain (Captain Jack Sparrow) explore a MySQL database treasure map.
@@ -173,20 +183,16 @@ Important:
 
 # =============== STREAMLIT USER INTERFACE ===============
 
-# Application Title
 st.title("Captain Jack Sparrow: Database Treasure Hunter")
 
-# Show connected database information if needed
 if st.checkbox("See Connected Treasure (Database Info)"):
     st.success(f"Connected to: {st.session_state['current_db_name']}")
 
-# Display chat history
 for message in st.session_state["chat_history"]:
     role = "AI" if message["role"] == "AI" else "Human"
     with st.chat_message(role):
         st.write(message["content"])
 
-# Accept new user queries
 user_query = st.chat_input("What's yer next command, Captain? 🧭")
 
 if user_query:
