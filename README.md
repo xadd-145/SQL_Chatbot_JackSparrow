@@ -119,7 +119,7 @@ Visit: [http://localhost:8501](http://localhost:8501)
 
 ## ✨ Credits
 
-- Ship built and captained by **Sahil Shimpi** ⚓  
+- Ship built and captained by **Sahil Shimpi** & **Aditi Patil** ⚓  
 - Foundational code and debugging support graciously provided by **[Omniwot](https://github.com/Omniwot)** 🌟  
 - Powered by the magic of **Claude 3.5 Sonnet (Anthropic)**, **LangChain**, and **Streamlit**  
 - Inspired by the dream: *making databases as easy to explore as a pirate's map.*
